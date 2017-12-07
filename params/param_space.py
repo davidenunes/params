@@ -2,6 +2,7 @@ import math
 import configobj as cfg
 import itertools
 import numpy as np
+import csv
 
 
 class ParamSpace:
@@ -20,6 +21,9 @@ class ParamSpace:
     def __init__(self, filename=None):
         self.config = cfg.ConfigObj(filename)
         self.grid_size = 0
+
+    def get_params(self):
+        return self.config.sections
 
     def _update_grid_size(self, n):
         if self.grid_size == 0:
@@ -212,3 +216,26 @@ class ParamSpace:
         """
         self.config.filename = filename
         self.config.write()
+
+    def write_grid_summary(self, output_path="params.csv", conf_id_header="conf_id"):
+        """ Writes a csv file with each line containing a configuration value with a unique
+        id for each configuration
+
+        Args:
+            conf_id_header : the header the be displayed on the summary file with the configuration id
+            output_path: the output path for the summary file
+        """
+        summary_header = [conf_id_header]
+        summary_header += self.get_params()
+
+        with open(output_path, mode="w", newline='') as outfile:
+            writer = csv.DictWriter(outfile, fieldnames=summary_header)
+            writer.writeheader()
+
+            param_grid = self.param_grid()
+            conf_id = 0
+            for param_row in param_grid:
+                # add id to the current row
+                param_row[conf_id_header] = conf_id
+                conf_id += 1
+                writer.writerow(param_row)
