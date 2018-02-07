@@ -1,6 +1,5 @@
 import unittest
 from params import ParamSpace
-from params import param_utils
 
 import csv
 import os
@@ -67,6 +66,38 @@ class MyTestCase(unittest.TestCase):
 
         self.assertEqual(len(params), ps.grid_size)
 
+    def test_add_random(self):
+        """ If persist is not set to True for add_random
+        each time we call param_grid, it samples new random values
+        this is because persist = True saves the parameter as a list
+        or randomly generated parameters
+        """
+        ps = ParamSpace()
+        ps.add_random("rand", 0, 1, 1, persist=False)
+
+        params1 = ps.param_grid()
+        self.assertTrue(ps.grid_size, 1)
+        r1 = next(params1)["rand"]
+
+        params2 = ps.param_grid()
+        r2 = next(params2)["rand"]
+
+        self.assertNotEqual(r1, r2)
+
+    def test_param_grid_with_id(self):
+        ps = ParamSpace()
+        ps.add_value("p1", True)
+        ps.add_list("p2", ["A", "B"])
+
+        params1 = ps.param_grid()
+        params1_ls = []
+        for i, param in enumerate(params1):
+            param.update({"id": i})
+            params1_ls.append(param)
+
+        params2 = ps.param_grid(include_id=True)
+        self.assertListEqual(params1_ls, list(params2))
+
     def test_write_grid_files(self):
         ps = ParamSpace()
         ps.add_value("p1", True)
@@ -77,9 +108,7 @@ class MyTestCase(unittest.TestCase):
         out_path = "/tmp/test_params/"
         if not os.path.exists(out_path) or not os.path.isdir(out_path):
             os.makedirs(out_path)
-        param_utils.write_config_files(ps,out_path)
-
-
+        ps.write_config_files(out_path)
 
 
 if __name__ == '__main__':
